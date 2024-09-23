@@ -64,10 +64,10 @@ def schedule_match():
 
     # Schedule the match
     new_match = Match(
-        home_team_id=home_team.id,  # Use home_team_id
-        away_team_id=away_team.id,  # Use away_team_id
-        field_id=field.id,          # Use field_id
-        referee_id=referee.id,      # Use referee_id
+        home_team_id=home_team.id,  
+        away_team_id=away_team.id,  
+        field_id=field.id,        
+        referee_id=referee.id,      
         time_of_play=time_of_play
     )
 

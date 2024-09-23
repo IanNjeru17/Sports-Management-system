@@ -11,7 +11,7 @@ from scheduler import (
 )
 
 def main():
-    # Initialize the database and create tables
+    # Initialize the db
     initialize_db()
     
     while True:
