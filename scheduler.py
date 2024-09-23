@@ -134,3 +134,40 @@ def add_referee():
     session.add(new_referee)
     session.commit()
     print(f"Referee '{referee_name}' added successfully.")
+    
+def delete_team():
+    """Delete a team by its name."""
+    session = SessionLocal()
+
+    team_name = input("Enter the name of the team you want to delete: ").strip()
+
+    # Check if the team exists
+    team = session.query(Team).filter_by(name=team_name).first()
+
+    if team:
+        # Confirm before deleting
+        confirmation = input(f"Are you sure you want to delete the team '{team_name}'? (yes/no): ").lower()
+        if confirmation == 'yes':
+            session.delete(team)
+            session.commit()
+            print(f"Team '{team_name}' has been deleted.")
+        else:
+            print(f"Deletion of team '{team_name}' was cancelled.")
+    else:
+        print(f"Team '{team_name}' not found.")
+
+    session.close()
+
+def list_teams():
+    """List all teams in the system."""
+    session = SessionLocal()
+
+    teams = session.query(Team).all()
+    if teams:
+        print("\nList of Teams:")
+        for team in teams:
+            print(f"- {team.name}")
+    else:
+        print("No teams found.")
+
+    session.close()
