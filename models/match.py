@@ -1,20 +1,19 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from base import Base
-from datetime import datetime
 
 class Match(Base):
     __tablename__ = 'matches'
     
     id = Column(Integer, primary_key=True)
-    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    field_id = Column(Integer, ForeignKey('fields.id'), nullable=False)
-    referee_id = Column(Integer, ForeignKey('referees.id'), nullable=False)
-    time_of_play = Column(DateTime, nullable=False)  # New field for match time
+    home_team_id = Column(Integer, ForeignKey('teams.id'))
+    away_team_id = Column(Integer, ForeignKey('teams.id'))
+    field_id = Column(Integer, ForeignKey('fields.id'))
+    referee_id = Column(Integer, ForeignKey('referees.id'))
+    time_of_play = Column(DateTime, nullable=False)
 
-    team = relationship('Team', back_populates='matches')
-    field = relationship('Field')
-    referee = relationship('Referee')
-
-    def __repr__(self):
-        return f"<Match {self.team.name} at {self.time_of_play} on {self.field.name} with {self.referee.name}>"
+    # Relationships
+    home_team = relationship("Team", foreign_keys=[home_team_id], back_populates="home_matches")
+    away_team = relationship("Team", foreign_keys=[away_team_id], back_populates="away_matches")
+    field = relationship("Field") 
+    referee = relationship("Referee")

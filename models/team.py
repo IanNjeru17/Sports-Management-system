@@ -7,4 +7,7 @@ class Team(Base):
     
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    matches = relationship('Match', back_populates='team')
+
+    # Relationships for matches
+    home_matches = relationship("Match", foreign_keys='Match.home_team_id', back_populates="home_team")
+    away_matches = relationship("Match", foreign_keys='Match.away_team_id', back_populates="away_team")

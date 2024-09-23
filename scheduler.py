@@ -1,173 +1,179 @@
-from prompt_toolkit import prompt
-from sqlalchemy.orm import Session
-from db import SessionLocal
 from models import Team, Field, Referee, Match
+from db import SessionLocal
 from datetime import datetime
 
 def schedule_match():
-    """Schedule a new match by assigning a team, field, referee, and time of play."""
     session = SessionLocal()
 
-    # Prompt the user for team, field, referee, and time of play
-    team_name = prompt('Enter team name: ')
-    field_name = prompt('Enter field name: ')
-    referee_name = prompt('Enter referee name: ')
-    time_of_play_input = prompt('Enter time of play (YYYY-MM-DD HH:MM format): ')
+    # Get all teams
+    teams = session.query(Team).all()
+    if not teams:
+        print("No teams available. Please add teams first.")
+        session.close()
+        return
+    
+    # Select home team
+    print("\nSelect the Home Team:")
+    for index, team in enumerate(teams, start=1):
+        print(f"{index}. {team.name}")
+    home_team_choice = int(input("Enter home team number: ")) - 1
+    home_team = teams[home_team_choice]
 
+    # Select away team (opponent)
+    print("\nSelect the Away Team (Opponent):")
+    for index, team in enumerate(teams, start=1):
+        if team != home_team:  # Prevent selecting the same team
+            print(f"{index}. {team.name}")
+    away_team_choice = int(input("Enter away team number: ")) - 1
+    away_team = teams[away_team_choice]
+
+    # Select field
+    fields = session.query(Field).all()
+    if not fields:
+        print("No fields available. Please add fields first.")
+        session.close()
+        return
+    
+    print("\nSelect the Field:")
+    for index, field in enumerate(fields, start=1):
+        print(f"{index}. {field.name}")
+    field_choice = int(input("Enter field number: ")) - 1
+    field = fields[field_choice]
+
+    # Select referee
+    referees = session.query(Referee).all()
+    if not referees:
+        print("No referees available. Please add referees first.")
+        session.close()
+        return
+    
+    print("\nSelect the Referee:")
+    for index, referee in enumerate(referees, start=1):
+        print(f"{index}. {referee.name}")
+    referee_choice = int(input("Enter referee number: ")) - 1
+    referee = referees[referee_choice]
+
+    # Get the time of play
+    time_of_play_str = input("Enter time of play (YYYY-MM-DD HH:MM format): ")
     try:
-        # Convert the user input to a datetime object
-        time_of_play = datetime.strptime(time_of_play_input, '%Y-%m-%d %H:%M')
+        time_of_play = datetime.strptime(time_of_play_str, '%Y-%m-%d %H:%M')
     except ValueError:
         print("Invalid date format. Please use 'YYYY-MM-DD HH:MM' format.")
+        session.close()
         return
 
-    # Query the database for existing team, field, and referee
-    team = session.query(Team).filter_by(name=team_name).first()
-    field = session.query(Field).filter_by(name=field_name).first()
-    referee = session.query(Referee).filter_by(name=referee_name).first()
+    # Schedule the match
+    new_match = Match(
+        home_team_id=home_team.id,  # Use home_team_id
+        away_team_id=away_team.id,  # Use away_team_id
+        field_id=field.id,          # Use field_id
+        referee_id=referee.id,      # Use referee_id
+        time_of_play=time_of_play
+    )
 
-    if not team or not field or not referee:
-        print("Error: Ensure that the team, field, and referee exist.")
-        return
-
-    # Create a new match with the provided details
-    new_match = Match(team=team, field=field, referee=referee, time_of_play=time_of_play)
     session.add(new_match)
     session.commit()
-    print(f'Match scheduled: {team.name} on {field.name} with referee {referee.name} at {time_of_play}.')
+    print(f"Match scheduled: {home_team.name} vs {away_team.name} on {field.name} at {time_of_play}.")
+    session.close()
 
 def view_assignments():
-    """View all scheduled matches."""
     session = SessionLocal()
+
     matches = session.query(Match).all()
+    if matches:
+        print("\nCurrent Match Assignments:")
+        for match in matches:
+            print(f"{match.home_team.name} vs {match.away_team.name} at {match.field.name}, "
+                  f"Referee: {match.referee.name}, Time: {match.time_of_play}")
+    else:
+        print("No matches scheduled.")
     
-    # Display match details
-    for match in matches:
-        print(f'Match {match.id}: {match.team.name} on {match.field.name} with {match.referee.name} at {match.time_of_play}')
-
-def update_existing_match():
-    """Update an existing match with new field, referee, or time of play."""
-    session = SessionLocal()
-    match_id = int(prompt('Enter match ID to update: '))
-
-    # Fetch the match by its ID
-    match = session.query(Match).get(match_id)
-
-    if not match:
-        print(f"Match with ID {match_id} not found.")
-        return
-
-    # Prompt for new field, referee, or time of play
-    field_name = prompt('Enter new field name (leave empty to keep current): ')
-    referee_name = prompt('Enter new referee name (leave empty to keep current): ')
-    time_of_play_input = prompt('Enter new time of play (YYYY-MM-DD HH:MM) or leave blank to keep current: ')
-
-    # Update field, referee, and time of play if provided
-    if field_name:
-        field = session.query(Field).filter_by(name=field_name).first()
-        if field:
-            match.field = field
-        else:
-            print(f"Field '{field_name}' not found.")
-
-    if referee_name:
-        referee = session.query(Referee).filter_by(name=referee_name).first()
-        if referee:
-            match.referee = referee
-        else:
-            print(f"Referee '{referee_name}' not found.")
-
-    if time_of_play_input:
-        try:
-            time_of_play = datetime.strptime(time_of_play_input, '%Y-%m-%d %H:%M')
-            match.time_of_play = time_of_play
-        except ValueError:
-            print("Invalid date format. Keeping current time of play.")
-
-    session.commit()
-    print(f"Match {match.id} updated.")
+    session.close()
 
 def add_team():
-    """Add a new team."""
     session = SessionLocal()
-    team_name = prompt('Enter the new team name: ')
-
-    # Check if the team already exists
-    if session.query(Team).filter_by(name=team_name).first():
-        print(f"Team '{team_name}' already exists.")
-        return
-
-    # Add the new team to the database
+    team_name = input("Enter team name: ")
     new_team = Team(name=team_name)
     session.add(new_team)
     session.commit()
     print(f"Team '{team_name}' added successfully.")
+    session.close()
 
-def add_field():
-    """Add a new field."""
-    session = SessionLocal()
-    field_name = prompt('Enter the new field name: ')
-
-    # Check if the field already exists
-    if session.query(Field).filter_by(name=field_name).first():
-        print(f"Field '{field_name}' already exists.")
-        return
-
-    # Add the new field to the database
-    new_field = Field(name=field_name)
-    session.add(new_field)
-    session.commit()
-    print(f"Field '{field_name}' added successfully.")
-
-def add_referee():
-    """Add a new referee."""
-    session = SessionLocal()
-    referee_name = prompt('Enter the new referee name: ')
-
-    # Check if the referee already exists
-    if session.query(Referee).filter_by(name=referee_name).first():
-        print(f"Referee '{referee_name}' already exists.")
-        return
-
-    # Add the new referee to the database
-    new_referee = Referee(name=referee_name)
-    session.add(new_referee)
-    session.commit()
-    print(f"Referee '{referee_name}' added successfully.")
-    
 def delete_team():
-    """Delete a team by its name."""
     session = SessionLocal()
+    teams = session.query(Team).all()
+    if not teams:
+        print("No teams available to delete.")
+        session.close()
+        return
+    
+    print("\nSelect the Team to delete:")
+    for index, team in enumerate(teams, start=1):
+        print(f"{index}. {team.name}")
+    team_choice = int(input("Enter team number: ")) - 1
+    team_to_delete = teams[team_choice]
 
-    team_name = input("Enter the name of the team you want to delete: ").strip()
-
-    # Check if the team exists
-    team = session.query(Team).filter_by(name=team_name).first()
-
-    if team:
-        # Confirm before deleting
-        confirmation = input(f"Are you sure you want to delete the team '{team_name}'? (yes/no): ").lower()
-        if confirmation == 'yes':
-            session.delete(team)
-            session.commit()
-            print(f"Team '{team_name}' has been deleted.")
-        else:
-            print(f"Deletion of team '{team_name}' was cancelled.")
-    else:
-        print(f"Team '{team_name}' not found.")
-
+    session.delete(team_to_delete)
+    session.commit()
+    print(f"Team '{team_to_delete.name}' deleted successfully.")
     session.close()
 
 def list_teams():
-    """List all teams in the system."""
     session = SessionLocal()
-
     teams = session.query(Team).all()
     if teams:
         print("\nList of Teams:")
         for team in teams:
             print(f"- {team.name}")
     else:
-        print("No teams found.")
+        print("No teams available.")
+    session.close()
 
+def add_field():
+    session = SessionLocal()
+    field_name = input("Enter field name: ")
+    new_field = Field(name=field_name)
+    session.add(new_field)
+    session.commit()
+    print(f"Field '{field_name}' added successfully.")
+    session.close()
+
+def add_referee():
+    session = SessionLocal()
+    referee_name = input("Enter referee name: ")
+    new_referee = Referee(name=referee_name)
+    session.add(new_referee)
+    session.commit()
+    print(f"Referee '{referee_name}' added successfully.")
+    session.close()
+
+def update_existing_match():
+    session = SessionLocal()
+    
+    matches = session.query(Match).all()
+    if not matches:
+        print("No matches available to update.")
+        session.close()
+        return
+
+    print("\nSelect a match to update:")
+    for index, match in enumerate(matches, start=1):
+        print(f"{index}. {match.home_team.name} vs {match.away_team.name} on {match.time_of_play}")
+    match_choice = int(input("Enter match number: ")) - 1
+    selected_match = matches[match_choice]
+
+    print(f"Updating match: {selected_match.home_team.name} vs {selected_match.away_team.name}")
+
+    # Option to update time of play
+    time_of_play_str = input("Enter new time of play (YYYY-MM-DD HH:MM format) or press enter to keep current: ")
+    if time_of_play_str:
+        try:
+            time_of_play = datetime.strptime(time_of_play_str, '%Y-%m-%d %H:%M')
+            selected_match.time_of_play = time_of_play
+        except ValueError:
+            print("Invalid date format. Keeping the current time.")
+    
+    # Commit changes
+    session.commit()
+    print(f"Match updated successfully.")
     session.close()

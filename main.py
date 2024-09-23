@@ -1,4 +1,4 @@
-# main.py
+from db import initialize_db, SessionLocal
 from scheduler import (
     schedule_match,
     view_assignments,
@@ -11,34 +11,37 @@ from scheduler import (
 )
 
 def main():
+    # Initialize the database and create tables
+    initialize_db()
+    
     while True:
         print("\nSports Management System")
-        print("1. Schedule Match")
-        print("2. View Assignments")
-        print("3. Update Existing Match")
-        print("4. Add Team")
-        print("5. Add Field")
-        print("6. Add Referee")
-        print("7. Delete Team")  # New option for deleting a team
-        print("8. List All Teams")
+        print("1. Add Team")
+        print("2. Add Field")
+        print("3. Add Referee")
+        print("4. List All Teams")
+        print("5. Schedule Match")
+        print("6. View Assignments")
+        print("7. Delete Team")
+        print("8. Update Existing Match")
         print("9. Exit")
         choice = input("Enter choice: ")
 
-        if choice == '1':
+        if choice == '5':
             schedule_match()
-        elif choice == '2':
-            view_assignments()
-        elif choice == '3':
-            update_existing_match()
-        elif choice == '4':
-            add_team()
-        elif choice == '5':
-            add_field()
         elif choice == '6':
+            view_assignments()
+        elif choice == '8':
+            update_existing_match()
+        elif choice == '1':
+            add_team()
+        elif choice == '2':
+            add_field()
+        elif choice == '3':
             add_referee()
         elif choice == '7':
-            delete_team()  
-        elif choice == '8':
+            delete_team()
+        elif choice == '4':
             list_teams()
         elif choice == '9':
             print("Exiting...")
